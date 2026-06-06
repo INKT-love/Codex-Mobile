@@ -1,8 +1,8 @@
-import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { PermissionLevel, TaskCreatePayload, TaskEvent } from "@codex-mobile/protocol";
 import { discoverCodexExecutable } from "./codexDiscovery.js";
 import type { AgentConfig } from "./config.js";
+import { spawnCommand } from "./processCommand.js";
 import { projectIdToPath, resolveInsideWorkspace } from "./workspace.js";
 
 export interface CodexExecutorHandlers {
@@ -75,6 +75,8 @@ export async function runCodexTask(
     "--json",
     "--sandbox",
     sandboxForPermission(payload.permissionLevel),
+    "--cd",
+    cwd,
     payload.prompt,
   ];
 
@@ -88,35 +90,40 @@ export async function runCodexTask(
   );
 
   await new Promise<void>((resolve) => {
-    const child = spawn(codex.path as string, args, {
+    const child = spawnCommand(codex.path as string, args, {
       cwd,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
 
-    const stdout = createInterface({
-      input: child.stdout,
-    });
-    const stderr = createInterface({
-      input: child.stderr,
-    });
+    if (child.stdout) {
+      const stdout = createInterface({
+        input: child.stdout,
+      });
 
-    stdout.on("line", (line) => {
-      handlers.onEvent(
-        createTaskEvent(payload.taskId as string, "output", summarizeCodexJsonLine(line), {
-          stream: "stdout",
-          raw: line,
-        }),
-      );
-    });
+      stdout.on("line", (line) => {
+        handlers.onEvent(
+          createTaskEvent(payload.taskId as string, "output", summarizeCodexJsonLine(line), {
+            stream: "stdout",
+            raw: line,
+          }),
+        );
+      });
+    }
 
-    stderr.on("line", (line) => {
-      handlers.onEvent(
-        createTaskEvent(payload.taskId as string, "output", line, {
-          stream: "stderr",
-        }),
-      );
-    });
+    if (child.stderr) {
+      const stderr = createInterface({
+        input: child.stderr,
+      });
+
+      stderr.on("line", (line) => {
+        handlers.onEvent(
+          createTaskEvent(payload.taskId as string, "output", line, {
+            stream: "stderr",
+          }),
+        );
+      });
+    }
 
     child.on("error", (error) => {
       handlers.onEvent(

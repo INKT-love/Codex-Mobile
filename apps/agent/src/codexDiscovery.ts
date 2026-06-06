@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import { spawnCommandSync } from "./processCommand.js";
 
 export interface CodexDiscoveryResult {
   path: string | null;
@@ -95,8 +96,7 @@ export function codexPathToDisplayUrl(path: string): string {
 }
 
 function testExecutable(path: string): { executable: boolean; error?: string } {
-  const result = spawnSync(path, ["--version"], {
-    encoding: "utf8",
+  const result = spawnCommandSync(path, ["--version"], {
     timeout: 5_000,
     windowsHide: true,
   });

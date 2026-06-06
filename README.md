@@ -80,23 +80,27 @@ Useful Agent environment variables:
 - `CODEX_MOBILE_WORKSPACE_ROOT`: defaults to `F:\Coding\Program`.
 - `CODEX_MOBILE_AGENT_EXECUTOR=mock`: uses the mock task executor for local end-to-end testing.
 
-## Current Codex Desktop Note
+## Codex CLI Note
 
-On this Windows machine, Codex Desktop exposes a package path like:
+Install the standalone Codex CLI when the Windows Store/Desktop packaged executable cannot be spawned directly:
 
-```text
-C:\Program Files\WindowsApps\OpenAI.Codex_...\app\resources\codex.exe
+```powershell
+npm install -g @openai/codex
 ```
 
-The Agent can discover that path, but direct execution currently returns `EPERM` from Windows package permissions. The Agent reports this as a task failure event instead of hiding it.
+On Windows PowerShell, the `.ps1` shim may be blocked by the system execution policy. Use the `.cmd` shim for manual checks:
 
-Until a directly executable Codex CLI is installed or a stable Codex Desktop local integration is found, use:
+```powershell
+codex.cmd --version
+```
+
+The Agent now detects `codex.cmd` on `PATH` and executes it through `cmd.exe`, so it can use the globally installed CLI.
+
+For local server-agent-Android flow testing without running Codex, use:
 
 ```powershell
 $env:CODEX_MOBILE_AGENT_EXECUTOR = "mock"
 ```
-
-for local server-agent-Android flow testing.
 
 ## Android Toolchain
 
