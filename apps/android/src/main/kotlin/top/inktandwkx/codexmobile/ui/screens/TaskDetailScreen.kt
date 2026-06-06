@@ -45,12 +45,12 @@ fun TaskDetailScreen() {
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
         Text(
-            text = "Codex Mobile",
+            text = "Codex 移动端",
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Black,
         )
         Text(
-            text = "Administrator · CodexMobile · Review",
+            text = "Administrator · CodexMobile · 只读预览",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -78,7 +78,7 @@ fun TaskDetailScreen() {
                 TextField(
                     value = prompt.value,
                     onValueChange = { prompt.value = it },
-                    placeholder = { Text("Message Codex...") },
+                    placeholder = { Text("给 Codex 发送消息...") },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -95,15 +95,15 @@ fun TaskDetailScreen() {
                 ) {
                     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface) {
                         IconButton(onClick = {}) {
-                            Icon(Icons.Outlined.Add, contentDescription = "Attach")
+                            Icon(Icons.Outlined.Add, contentDescription = "添加附件")
                         }
                     }
                     Row {
                         IconButton(onClick = {}) {
-                            Icon(Icons.Outlined.Mic, contentDescription = "Voice")
+                            Icon(Icons.Outlined.Mic, contentDescription = "语音")
                         }
                         IconButton(onClick = {}) {
-                            Icon(Icons.Outlined.Send, contentDescription = "Send")
+                            Icon(Icons.Outlined.Send, contentDescription = "发送")
                         }
                     }
                 }

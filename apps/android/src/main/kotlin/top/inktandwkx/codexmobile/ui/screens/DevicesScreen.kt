@@ -40,9 +40,9 @@ fun DevicesScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Text("Devices", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
+        Text("设备管理", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
         Text(
-            text = "State: $connectionState",
+            text = "连接状态：${connectionState.toChineseConnectionState()}",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),
         )
@@ -57,7 +57,7 @@ fun DevicesScreen(
         OutlinedTextField(
             value = pairingCode,
             onValueChange = onPairingCodeChange,
-            label = { Text("Pairing code") },
+            label = { Text("配对码") },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
@@ -71,13 +71,13 @@ fun DevicesScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(onClick = onPair, modifier = Modifier.weight(1f)) {
-                Text("Pair")
+                Text("配对")
             }
             Button(onClick = onConnect, modifier = Modifier.weight(1f)) {
-                Text("Connect")
+                Text("连接")
             }
             Button(onClick = onRefresh, modifier = Modifier.weight(1f)) {
-                Text("Refresh")
+                Text("刷新")
             }
         }
 
@@ -104,13 +104,33 @@ private fun DeviceRow(device: DeviceUiModel) {
             Icon(Icons.Outlined.Computer, contentDescription = null)
             Column(modifier = Modifier.weight(1f)) {
                 Text(device.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(device.capabilities.joinToString(" · "), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    device.capabilities.joinToString(" · ") { it.toChineseCapability() },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Text(
-                text = if (device.status == DeviceStatus.Online) "ONLINE" else "OFFLINE",
+                text = if (device.status == DeviceStatus.Online) "在线" else "离线",
                 color = if (device.status == DeviceStatus.Online) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Black,
             )
         }
     }
+}
+
+private fun String.toChineseConnectionState(): String = when (this) {
+    "Disconnected" -> "未连接"
+    "Connecting" -> "连接中"
+    "Connected" -> "已连接"
+    "Closed" -> "已关闭"
+    "Failed" -> "连接失败"
+    "Authenticated" -> "已认证"
+    else -> this
+}
+
+private fun String.toChineseCapability(): String = when (lowercase()) {
+    "workspace" -> "工作区"
+    "codex" -> "Codex"
+    "git" -> "Git"
+    else -> this
 }

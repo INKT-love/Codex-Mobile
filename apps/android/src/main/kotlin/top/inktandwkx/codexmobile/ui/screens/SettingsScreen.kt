@@ -26,12 +26,12 @@ fun SettingsScreen(
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Text("Settings", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
+        Text("设置", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
 
         OutlinedTextField(
             value = serverUrl,
             onValueChange = onServerUrlChange,
-            label = { Text("Server URL") },
+            label = { Text("服务器地址") },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
@@ -39,7 +39,7 @@ fun SettingsScreen(
         )
 
         Text(
-            text = "Connection: $connectionState",
+            text = "连接状态：${connectionState.toChineseConnectionState()}",
             modifier = Modifier.padding(top = 16.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -58,7 +58,17 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(top = 24.dp),
         ) {
-            Text("Disconnect")
+            Text("断开连接")
         }
     }
+}
+
+private fun String.toChineseConnectionState(): String = when (this) {
+    "Disconnected" -> "未连接"
+    "Connecting" -> "连接中"
+    "Connected" -> "已连接"
+    "Closed" -> "已关闭"
+    "Failed" -> "连接失败"
+    "Authenticated" -> "已认证"
+    else -> this
 }

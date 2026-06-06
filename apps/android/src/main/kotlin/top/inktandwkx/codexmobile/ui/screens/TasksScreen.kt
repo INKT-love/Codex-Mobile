@@ -39,7 +39,7 @@ fun TasksScreen(onOpenTask: () -> Unit) {
     Scaffold(
         floatingActionButton = {
             LargeFloatingActionButton(onClick = onOpenTask) {
-                Icon(Icons.Outlined.AddComment, contentDescription = "New task")
+                Icon(Icons.Outlined.AddComment, contentDescription = "新建任务")
             }
         },
     ) { padding ->
@@ -55,7 +55,7 @@ fun TasksScreen(onOpenTask: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    text = "All Tasks",
+                    text = "全部任务",
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Black,
                 )
@@ -64,14 +64,14 @@ fun TasksScreen(onOpenTask: () -> Unit) {
                     shape = CircleShape,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
-                    Icon(Icons.Outlined.Menu, contentDescription = "Menu")
+                    Icon(Icons.Outlined.Menu, contentDescription = "菜单")
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("All", "Running", "Waiting", "Done").forEach { label ->
+                listOf("全部", "运行中", "待确认", "已完成").forEach { label ->
                     AssistChip(onClick = {}, label = { Text(label) })
                 }
             }
@@ -145,8 +145,8 @@ private fun TaskRow(task: TaskUiModel, onClick: () -> Unit) {
 
 private val TaskStatus.label: String
     get() = when (this) {
-        TaskStatus.Running -> "RUNNING"
-        TaskStatus.WaitingApproval -> "WAITING"
-        TaskStatus.Completed -> "DONE"
-        TaskStatus.Failed -> "FAILED"
+        TaskStatus.Running -> "运行中"
+        TaskStatus.WaitingApproval -> "待确认"
+        TaskStatus.Completed -> "已完成"
+        TaskStatus.Failed -> "失败"
     }

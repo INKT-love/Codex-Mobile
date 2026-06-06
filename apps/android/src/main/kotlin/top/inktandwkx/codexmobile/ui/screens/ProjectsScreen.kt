@@ -31,7 +31,7 @@ fun ProjectsScreen() {
             .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Text("Projects", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
+        Text("项目", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black)
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
             items(SampleData.projects) { project ->
@@ -41,7 +41,7 @@ fun ProjectsScreen() {
 
         Button(onClick = {}, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.CreateNewFolder, contentDescription = null)
-            Text("Create Project")
+            Text("创建项目")
         }
     }
 }

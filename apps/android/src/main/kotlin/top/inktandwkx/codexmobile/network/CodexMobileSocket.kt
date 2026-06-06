@@ -36,7 +36,7 @@ class CodexMobileSocket(
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    onState(SocketState.Failed(t.message ?: "WebSocket failed"))
+                    onState(SocketState.Failed(t.message ?: "WebSocket 连接失败"))
                 }
             },
         )

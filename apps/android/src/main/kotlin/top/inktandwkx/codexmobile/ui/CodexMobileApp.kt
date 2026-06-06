@@ -36,10 +36,10 @@ private data class TopLevelRoute(
 )
 
 private val topLevelRoutes = listOf(
-    TopLevelRoute("tasks", "Tasks", { Icon(Icons.Outlined.ListAlt, contentDescription = null) }),
-    TopLevelRoute("devices", "Devices", { Icon(Icons.Outlined.Computer, contentDescription = null) }),
-    TopLevelRoute("projects", "Projects", { Icon(Icons.Outlined.Folder, contentDescription = null) }),
-    TopLevelRoute("settings", "Settings", { Icon(Icons.Outlined.Settings, contentDescription = null) }),
+    TopLevelRoute("tasks", "任务", { Icon(Icons.Outlined.ListAlt, contentDescription = null) }),
+    TopLevelRoute("devices", "设备", { Icon(Icons.Outlined.Computer, contentDescription = null) }),
+    TopLevelRoute("projects", "项目", { Icon(Icons.Outlined.Folder, contentDescription = null) }),
+    TopLevelRoute("settings", "设置", { Icon(Icons.Outlined.Settings, contentDescription = null) }),
 )
 
 @Composable

@@ -54,7 +54,7 @@ class CodexMobileViewModel(
     fun pairDevice() {
         val code = _uiState.value.pairingCode
         if (code.length < 4) {
-            _uiState.update { it.copy(lastError = "Enter a valid pairing code.") }
+            _uiState.update { it.copy(lastError = "请输入有效的配对码。") }
             return
         }
 
@@ -65,7 +65,7 @@ class CodexMobileViewModel(
     fun connectAuthenticated() {
         val state = _uiState.value
         if (state.localDeviceId == null || state.localDeviceToken == null) {
-            _uiState.update { it.copy(lastError = "Pair this phone before connecting.") }
+            _uiState.update { it.copy(lastError = "连接前请先配对此手机。") }
             return
         }
 
@@ -107,7 +107,7 @@ class CodexMobileViewModel(
 
     private fun handleMessage(text: String) {
         val envelope = runCatching { parseEnvelope(text) }.getOrElse { error ->
-            _uiState.update { it.copy(lastError = error.message ?: "Invalid server message.") }
+            _uiState.update { it.copy(lastError = error.message ?: "服务器消息格式无效。") }
             return
         }
 
@@ -126,7 +126,7 @@ class CodexMobileViewModel(
                 socket.send(
                     buildPairingClaimMessage(
                         code = _uiState.value.pairingCode,
-                        deviceName = "Android Phone",
+                        deviceName = "安卓手机",
                     ),
                 )
             }
