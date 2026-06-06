@@ -32,8 +32,13 @@ export const deviceHelloPayloadSchema = z.object({
 });
 export type DeviceHelloPayload = z.infer<typeof deviceHelloPayloadSchema>;
 
+export const deviceStatusPayloadSchema = z.object({
+  device: deviceSchema,
+});
+export type DeviceStatusPayload = z.infer<typeof deviceStatusPayloadSchema>;
+
 export const deviceListPayloadSchema = z.object({
-  devices: z.array(deviceSchema),
+  devices: z.array(deviceSchema).optional(),
 });
 export type DeviceListPayload = z.infer<typeof deviceListPayloadSchema>;
 
@@ -99,11 +104,23 @@ export const serverWelcomePayloadSchema = z.object({
 });
 export type ServerWelcomePayload = z.infer<typeof serverWelcomePayloadSchema>;
 
+export const authLoginPayloadSchema = z.object({
+  deviceId: z.string().min(1),
+  token: z.string().min(1),
+});
+export type AuthLoginPayload = z.infer<typeof authLoginPayloadSchema>;
+
+export const authOkPayloadSchema = z.object({
+  device: deviceSchema,
+});
+export type AuthOkPayload = z.infer<typeof authOkPayloadSchema>;
+
 export const messagePayloadSchemas = {
   "pairing.create": pairingCreatePayloadSchema,
   "pairing.claim": pairingClaimPayloadSchema,
   "pairing.confirmed": pairingConfirmedPayloadSchema,
   "device.hello": deviceHelloPayloadSchema,
+  "device.status": deviceStatusPayloadSchema,
   "device.list": deviceListPayloadSchema,
   "project.list": projectListPayloadSchema,
   "project.create": projectCreatePayloadSchema,
@@ -114,6 +131,8 @@ export const messagePayloadSchemas = {
   "approval.respond": approvalRespondPayloadSchema,
   "notification.intent": notificationIntentPayloadSchema,
   "server.welcome": serverWelcomePayloadSchema,
+  "auth.login": authLoginPayloadSchema,
+  "auth.ok": authOkPayloadSchema,
   error: errorPayloadSchema,
   ping: z.object({}),
   pong: z.object({}),

@@ -23,6 +23,16 @@ export interface DeviceRecord {
   lastSeenAt: string | null;
 }
 
+export interface DeviceLookupRecord {
+  device_id: string;
+  device_name: string;
+  device_type: "android" | "agent";
+  token_hash: string;
+  capabilities_json: string;
+  created_at: string;
+  last_seen_at: string | null;
+}
+
 export interface PairingCodeLookupRecord {
   pairing_code_id: string;
   code_hash: string;
@@ -176,6 +186,64 @@ export function insertDevice(database: DatabaseConnection, record: DeviceRecord)
       `,
     )
     .run(record);
+}
+
+export function findDeviceById(
+  database: DatabaseConnection,
+  deviceId: string,
+): DeviceLookupRecord | undefined {
+  return database
+    .prepare(
+      `
+        SELECT
+          device_id,
+          device_name,
+          device_type,
+          token_hash,
+          capabilities_json,
+          created_at,
+          last_seen_at
+        FROM devices
+        WHERE device_id = ?
+      `,
+    )
+    .get(deviceId) as DeviceLookupRecord | undefined;
+}
+
+export function listDevices(database: DatabaseConnection): DeviceLookupRecord[] {
+  return database
+    .prepare(
+      `
+        SELECT
+          device_id,
+          device_name,
+          device_type,
+          token_hash,
+          capabilities_json,
+          created_at,
+          last_seen_at
+        FROM devices
+        ORDER BY created_at ASC
+      `,
+    )
+    .all() as DeviceLookupRecord[];
+}
+
+export function updateDevicePresence(
+  database: DatabaseConnection,
+  deviceId: string,
+  lastSeenAt: string,
+  capabilities: string[],
+): void {
+  database
+    .prepare(
+      `
+        UPDATE devices
+        SET last_seen_at = ?, capabilities_json = ?
+        WHERE device_id = ?
+      `,
+    )
+    .run(lastSeenAt, JSON.stringify(capabilities), deviceId);
 }
 
 export function markPairingCodeClaimed(

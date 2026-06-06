@@ -75,3 +75,20 @@ test("rejects invalid payload for known message types", () => {
 
   assert.equal(result.success, false);
 });
+
+test("parses auth.login protocol message", () => {
+  const parsed = parseProtocolMessage(
+    createEnvelope({
+      id: "msg_5",
+      type: "auth.login",
+      source: "agent:agent_1",
+      target: "server",
+      payload: {
+        deviceId: "agent_1",
+        token: "secret",
+      },
+    }),
+  );
+
+  assert.equal(parsed.type, "auth.login");
+});
