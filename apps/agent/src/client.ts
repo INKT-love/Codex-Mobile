@@ -4,8 +4,11 @@ import {
   parseProtocolMessage,
   type Device,
   type PairingConfirmedPayload,
+  type PermissionLevel,
+  type Project,
 } from "@codex-mobile/protocol";
 import type { AgentConfig } from "./config.js";
+import { createProjectFolder, listProjectFolders, resolveInsideWorkspace } from "./workspace.js";
 
 export interface PairAgentOptions {
   config: AgentConfig;
@@ -61,6 +64,23 @@ export function pairAgent(options: PairAgentOptions): Promise<PairingConfirmedPa
   });
 }
 
+function createProjectModel(
+  config: AgentConfig,
+  folderName: string,
+  permissionLevel: PermissionLevel = "Edit",
+): Project {
+  const absolutePath = resolveInsideWorkspace(config.workspaceRoot, folderName);
+
+  return {
+    projectId: Buffer.from(absolutePath, "utf8").toString("base64url"),
+    displayName: folderName,
+    absolutePath,
+    permissionLevel,
+    gitStatus: "unknown",
+    remoteCreateStatus: "notRequested",
+  };
+}
+
 export function runAgent(config: Required<Pick<AgentConfig, "deviceId" | "deviceToken">> & AgentConfig): void {
   const ws = new WebSocket(config.serverUrl);
 
@@ -107,6 +127,50 @@ export function runAgent(config: Required<Pick<AgentConfig, "deviceId" | "device
 
     if (message.type === "device.status") {
       console.log("Agent status updated.");
+    }
+
+    if (message.type === "project.list") {
+      const projects = listProjectFolders(config.workspaceRoot).map((folderName) =>
+        createProjectModel(config, folderName),
+      );
+
+      ws.send(
+        JSON.stringify(
+          createEnvelope({
+            id: `agent_project_list_${message.id}`,
+            type: "project.list",
+            source: `agent:${config.deviceId}`,
+            target: "server",
+            payload: {
+              agentDeviceId: config.deviceId,
+              projects,
+            },
+          }),
+        ),
+      );
+    }
+
+    if (message.type === "project.create") {
+      const payload = message.payload as {
+        folderName: string;
+        permissionLevel?: PermissionLevel;
+      };
+      createProjectFolder(config.workspaceRoot, payload.folderName);
+      const project = createProjectModel(config, payload.folderName, payload.permissionLevel ?? "Edit");
+
+      ws.send(
+        JSON.stringify(
+          createEnvelope({
+            id: `agent_project_created_${message.id}`,
+            type: "project.created",
+            source: `agent:${config.deviceId}`,
+            target: "server",
+            payload: {
+              project,
+            },
+          }),
+        ),
+      );
     }
 
     if (message.type === "error") {

@@ -62,6 +62,9 @@ export function resolveInsideWorkspace(workspaceRoot: string, inputPath: string)
 
 export function listProjectFolders(workspaceRoot: string): string[] {
   const root = resolveInsideWorkspace(workspaceRoot, ".");
+  mkdirSync(root, {
+    recursive: true,
+  });
 
   return readdirSync(root)
     .filter((entry) => statSync(resolveInsideWorkspace(root, entry)).isDirectory())

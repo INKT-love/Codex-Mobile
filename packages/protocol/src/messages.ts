@@ -55,6 +55,11 @@ export const projectCreatePayloadSchema = z.object({
 });
 export type ProjectCreatePayload = z.infer<typeof projectCreatePayloadSchema>;
 
+export const projectCreatedPayloadSchema = z.object({
+  project: projectSchema,
+});
+export type ProjectCreatedPayload = z.infer<typeof projectCreatedPayloadSchema>;
+
 export const taskCreatePayloadSchema = z.object({
   title: z.string().min(1),
   prompt: z.string().min(1),
@@ -124,6 +129,7 @@ export const messagePayloadSchemas = {
   "device.list": deviceListPayloadSchema,
   "project.list": projectListPayloadSchema,
   "project.create": projectCreatePayloadSchema,
+  "project.created": projectCreatedPayloadSchema,
   "task.create": taskCreatePayloadSchema,
   "task.status": taskStatusPayloadSchema,
   "task.event": taskEventPayloadSchema,

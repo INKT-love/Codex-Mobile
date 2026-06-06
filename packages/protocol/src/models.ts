@@ -10,6 +10,7 @@ export const messageSourceSchema = z.union([
 export type MessageSource = z.infer<typeof messageSourceSchema>;
 
 export const messageTargetSchema = z.union([
+  clientKindSchema,
   z.literal("server"),
   z.literal("broadcast"),
   z.string().regex(/^(android|agent|server):[A-Za-z0-9_.:-]+$/),

@@ -58,6 +58,26 @@ function send(ws: WebSocket, value: unknown): void {
   ws.send(JSON.stringify(value));
 }
 
+function getOnlineDeviceSockets(sessions: Map<WebSocket, ClientSession>): Map<string, WebSocket> {
+  const sockets = new Map<string, WebSocket>();
+
+  for (const [socket, session] of sessions.entries()) {
+    if (session.device) {
+      sockets.set(session.device.deviceId, socket);
+    }
+  }
+
+  return sockets;
+}
+
+function sendToAndroidClients(sessions: Map<WebSocket, ClientSession>, value: unknown): void {
+  for (const [socket, session] of sessions.entries()) {
+    if (session.device?.deviceType === "android") {
+      send(socket, value);
+    }
+  }
+}
+
 function sendError(
   ws: WebSocket,
   id: string,
@@ -241,6 +261,56 @@ function handleWsMessage(
         },
       }),
     );
+    return;
+  }
+
+  if (parsed.type === "project.created") {
+    parsePayloadForType("project.created", parsed.payload);
+    sendToAndroidClients(sessions, parsed);
+    return;
+  }
+
+  if (parsed.type === "project.list") {
+    const payload = parsePayloadForType("project.list", parsed.payload);
+
+    if (payload.projects) {
+      sendToAndroidClients(sessions, parsed);
+      return;
+    }
+
+    const agentSocket = getOnlineDeviceSockets(sessions).get(payload.agentDeviceId);
+
+    if (!agentSocket) {
+      sendError(
+        ws,
+        `server_error_${parsed.id}`,
+        parsed.source,
+        "agent_offline",
+        "Target Agent is offline.",
+      );
+      return;
+    }
+
+    send(agentSocket, parsed);
+    return;
+  }
+
+  if (parsed.type === "project.create") {
+    const payload = parsePayloadForType("project.create", parsed.payload);
+    const agentSocket = getOnlineDeviceSockets(sessions).get(payload.agentDeviceId);
+
+    if (!agentSocket) {
+      sendError(
+        ws,
+        `server_error_${parsed.id}`,
+        parsed.source,
+        "agent_offline",
+        "Target Agent is offline.",
+      );
+      return;
+    }
+
+    send(agentSocket, parsed);
     return;
   }
 
