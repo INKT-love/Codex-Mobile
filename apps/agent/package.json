@@ -7,9 +7,17 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js"
+    "doctor": "node dist/index.js doctor",
+    "pair": "node dist/index.js pair",
+    "start": "node dist/index.js",
+    "test": "node --test \"dist/**/*.test.js\""
   },
   "dependencies": {
-    "@codex-mobile/protocol": "0.1.0"
+    "@codex-mobile/protocol": "0.1.0",
+    "ws": "^8.21.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
   }
 }

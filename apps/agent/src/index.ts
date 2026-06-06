@@ -1,18 +1,58 @@
-import os from "node:os";
-import { createEnvelope } from "@codex-mobile/protocol";
+import { loadAgentConfig, saveAgentConfig } from "./config.js";
+import { discoverCodexExecutable } from "./codexDiscovery.js";
+import { pairAgent, runAgent } from "./client.js";
 
-const workspaceRoot = process.env.CODEX_MOBILE_WORKSPACE_ROOT ?? "F:\\Coding\\Program";
+async function main(): Promise<void> {
+  const command = process.argv[2] ?? "run";
+  const config = loadAgentConfig();
 
-const bootMessage = createEnvelope({
-  id: "agent_boot",
-  type: "agent.boot",
-  source: "agent",
-  target: "server",
-  payload: {
-    deviceName: os.userInfo().username,
-    workspaceRoot,
-    capabilities: ["workspaceList", "projectCreate", "codexProcess", "git"],
-  },
-});
+  if (command === "pair") {
+    const pairingCode = process.argv[3];
 
-console.log(JSON.stringify(bootMessage, null, 2));
+    if (!pairingCode) {
+      throw new Error("Usage: npm run pair -w @codex-mobile/agent -- <pairing-code>");
+    }
+
+    const result = await pairAgent({
+      config,
+      pairingCode,
+    });
+
+    saveAgentConfig({
+      ...config,
+      deviceId: result.device.deviceId,
+      deviceToken: result.token,
+      deviceName: result.device.deviceName,
+    });
+
+    console.log(`Paired agent device ${result.device.deviceId}.`);
+    return;
+  }
+
+  if (command === "doctor") {
+    const codex = discoverCodexExecutable();
+    console.log(JSON.stringify(
+      {
+        serverUrl: config.serverUrl,
+        workspaceRoot: config.workspaceRoot,
+        deviceId: config.deviceId ?? null,
+        codex,
+      },
+      null,
+      2,
+    ));
+    return;
+  }
+
+  if (!config.deviceId || !config.deviceToken) {
+    throw new Error("Agent is not paired yet. Run: npm run pair -w @codex-mobile/agent -- <pairing-code>");
+  }
+
+  runAgent({
+    ...config,
+    deviceId: config.deviceId,
+    deviceToken: config.deviceToken,
+  });
+}
+
+await main();
