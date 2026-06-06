@@ -15,9 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddComment
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -49,24 +47,11 @@ fun TasksScreen(onOpenTask: () -> Unit) {
                 .padding(padding)
                 .padding(horizontal = 20.dp, vertical = 24.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = "全部任务",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Black,
-                )
-                FloatingActionButton(
-                    onClick = {},
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                ) {
-                    Icon(Icons.Outlined.Menu, contentDescription = "菜单")
-                }
-            }
+            Text(
+                text = "全部任务",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
