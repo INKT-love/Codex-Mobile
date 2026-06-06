@@ -97,3 +97,13 @@ $env:CODEX_MOBILE_AGENT_EXECUTOR = "mock"
 ```
 
 for local server-agent-Android flow testing.
+
+## Android Toolchain
+
+The Android project lives in `apps/android` and is configured as a Gradle module named `:apps:android`.
+
+This machine currently does not expose `java`, `gradle`, `ANDROID_HOME`, or `ANDROID_SDK_ROOT`, so Android compilation has not been run locally yet. After installing Android Studio or a JDK + Android SDK, verify with:
+
+```powershell
+gradle :apps:android:assembleDebug
+```
