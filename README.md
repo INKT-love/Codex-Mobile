@@ -106,10 +106,19 @@ $env:CODEX_MOBILE_AGENT_EXECUTOR = "mock"
 
 The Android project lives in `apps/android` and is configured as a Gradle module named `:apps:android`.
 
-This machine currently does not expose `java`, `gradle`, `ANDROID_HOME`, or `ANDROID_SDK_ROOT`, so Android compilation has not been run locally yet. After installing Android Studio or a JDK + Android SDK, verify with:
+This machine can build the Android app with the JDK and SDK installed under `F:\Android`.
 
 ```powershell
-gradle :apps:android:assembleDebug
+$env:JAVA_HOME = "F:\Android\jdk-17.0.2"
+$env:ANDROID_HOME = "F:\Android\Sdk"
+$env:ANDROID_SDK_ROOT = "F:\Android\Sdk"
+.\gradlew.bat :apps:android:assembleDebug
+```
+
+Debug APK output:
+
+```text
+apps/android/build/outputs/apk/debug/android-debug.apk
 ```
 
 Current Android source includes:
