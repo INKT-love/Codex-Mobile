@@ -7,13 +7,16 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "pairing:create": "node dist/cli.js pairing:create",
     "start": "node dist/index.js"
   },
   "dependencies": {
     "@codex-mobile/protocol": "0.1.0",
+    "better-sqlite3": "^12.10.0",
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/ws": "^8.18.1"
   }
 }
