@@ -1,0 +1,19 @@
+{
+  "name": "codex-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @codex-mobile/protocol && npm run build -w @codex-mobile/server && npm run build -w @codex-mobile/agent",
+    "check": "npm run build",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.3"
+  }
+}
