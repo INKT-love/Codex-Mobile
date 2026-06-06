@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 data/
+tmp-smoke/
 .gradle/
 .idea/
 *.iml

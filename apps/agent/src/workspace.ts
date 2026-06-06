@@ -79,3 +79,11 @@ export function createProjectFolder(workspaceRoot: string, folderName: string): 
   });
   return projectPath;
 }
+
+export function projectPathToId(absolutePath: string): string {
+  return Buffer.from(absolutePath, "utf8").toString("base64url");
+}
+
+export function projectIdToPath(projectId: string): string {
+  return Buffer.from(projectId, "base64url").toString("utf8");
+}

@@ -1,11 +1,13 @@
 import { existsSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 
 export interface CodexDiscoveryResult {
   path: string | null;
   source: "path" | "desktop" | "missing";
+  executable: boolean;
+  error?: string;
 }
 
 function candidateNames(): string[] {
@@ -62,26 +64,52 @@ function findDesktopCodex(): string | null {
 export function discoverCodexExecutable(): CodexDiscoveryResult {
   const pathResult = findOnPath();
   if (pathResult) {
+    const executable = testExecutable(pathResult);
     return {
       path: pathResult,
       source: "path",
+      ...executable,
     };
   }
 
   const desktopResult = findDesktopCodex();
   if (desktopResult) {
+    const executable = testExecutable(desktopResult);
     return {
       path: desktopResult,
       source: "desktop",
+      ...executable,
     };
   }
 
   return {
     path: null,
     source: "missing",
+    executable: false,
+    error: "Codex executable was not found.",
   };
 }
 
 export function codexPathToDisplayUrl(path: string): string {
   return pathToFileURL(path).toString();
+}
+
+function testExecutable(path: string): { executable: boolean; error?: string } {
+  const result = spawnSync(path, ["--version"], {
+    encoding: "utf8",
+    timeout: 5_000,
+    windowsHide: true,
+  });
+
+  if (result.error) {
+    return {
+      executable: false,
+      error: result.error.message,
+    };
+  }
+
+  return {
+    executable: result.status === 0,
+    error: result.status === 0 ? undefined : result.stderr || result.stdout || "Codex command failed.",
+  };
 }

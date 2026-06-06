@@ -10,7 +10,13 @@ import {
   type TaskEvent,
 } from "@codex-mobile/protocol";
 import type { AgentConfig } from "./config.js";
-import { createProjectFolder, listProjectFolders, resolveInsideWorkspace } from "./workspace.js";
+import { runCodexTask } from "./codexExecutor.js";
+import {
+  createProjectFolder,
+  listProjectFolders,
+  projectPathToId,
+  resolveInsideWorkspace,
+} from "./workspace.js";
 
 export interface PairAgentOptions {
   config: AgentConfig;
@@ -74,7 +80,7 @@ function createProjectModel(
   const absolutePath = resolveInsideWorkspace(config.workspaceRoot, folderName);
 
   return {
-    projectId: Buffer.from(absolutePath, "utf8").toString("base64url"),
+    projectId: projectPathToId(absolutePath),
     displayName: folderName,
     absolutePath,
     permissionLevel,
@@ -231,7 +237,15 @@ export function runAgent(config: Required<Pick<AgentConfig, "deviceId" | "device
     }
 
     if (message.type === "task.create") {
-      runMockTask(ws, config, message.payload as TaskCreatePayload);
+      if (process.env.CODEX_MOBILE_AGENT_EXECUTOR === "mock") {
+        runMockTask(ws, config, message.payload as TaskCreatePayload);
+      } else {
+        void runCodexTask(config, message.payload as TaskCreatePayload, {
+          onEvent(event) {
+            sendTaskEvent(ws, config, event);
+          },
+        });
+      }
     }
 
     if (message.type === "error") {
