@@ -42,6 +42,27 @@ export interface PairingCodeLookupRecord {
   claimed_by_device_id: string | null;
 }
 
+export interface TaskRecord {
+  taskId: string;
+  title: string;
+  prompt: string;
+  projectId: string;
+  agentDeviceId: string;
+  status: string;
+  permissionLevel: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskEventRecord {
+  eventId: string;
+  taskId: string;
+  kind: string;
+  message: string;
+  dataJson: string | null;
+  createdAt: string;
+}
+
 export function openDatabase(databasePath: string): DatabaseConnection {
   mkdirSync(dirname(databasePath), {
     recursive: true,
@@ -261,4 +282,77 @@ export function markPairingCodeClaimed(
       `,
     )
     .run(claimedAt, claimedByDeviceId, pairingCodeId);
+}
+
+export function insertTask(database: DatabaseConnection, record: TaskRecord): void {
+  database
+    .prepare(
+      `
+        INSERT INTO tasks (
+          task_id,
+          title,
+          prompt,
+          project_id,
+          agent_device_id,
+          status,
+          permission_level,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          @taskId,
+          @title,
+          @prompt,
+          @projectId,
+          @agentDeviceId,
+          @status,
+          @permissionLevel,
+          @createdAt,
+          @updatedAt
+        )
+      `,
+    )
+    .run(record);
+}
+
+export function updateTaskStatus(
+  database: DatabaseConnection,
+  taskId: string,
+  status: string,
+  updatedAt: string,
+): void {
+  database
+    .prepare(
+      `
+        UPDATE tasks
+        SET status = ?, updated_at = ?
+        WHERE task_id = ?
+      `,
+    )
+    .run(status, updatedAt, taskId);
+}
+
+export function insertTaskEvent(database: DatabaseConnection, record: TaskEventRecord): void {
+  database
+    .prepare(
+      `
+        INSERT INTO task_events (
+          event_id,
+          task_id,
+          kind,
+          message,
+          data_json,
+          created_at
+        )
+        VALUES (
+          @eventId,
+          @taskId,
+          @kind,
+          @message,
+          @dataJson,
+          @createdAt
+        )
+      `,
+    )
+    .run(record);
 }

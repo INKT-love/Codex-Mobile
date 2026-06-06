@@ -15,6 +15,7 @@ import {
   updateAuthenticatedDevice,
 } from "./devices.js";
 import { PairingError, claimPairingCode } from "./pairing.js";
+import { createTaskRecord, persistTaskEvent } from "./tasks.js";
 
 export interface CodexMobileServer {
   listen(): Promise<void>;
@@ -311,6 +312,59 @@ function handleWsMessage(
     }
 
     send(agentSocket, parsed);
+    return;
+  }
+
+  if (parsed.type === "task.create") {
+    const payload = parsePayloadForType("task.create", parsed.payload);
+    const agentSocket = getOnlineDeviceSockets(sessions).get(payload.agentDeviceId);
+
+    if (!agentSocket) {
+      sendError(
+        ws,
+        `server_error_${parsed.id}`,
+        parsed.source,
+        "agent_offline",
+        "Target Agent is offline.",
+      );
+      return;
+    }
+
+    const task = createTaskRecord(database, payload);
+
+    send(
+      ws,
+      createEnvelope({
+        id: `task_created_${parsed.id}`,
+        type: "task.created",
+        source: "server",
+        target: parsed.source,
+        payload: {
+          task,
+        },
+      }),
+    );
+
+    send(
+      agentSocket,
+      createEnvelope({
+        id: parsed.id,
+        type: "task.create",
+        source: parsed.source,
+        target: `agent:${payload.agentDeviceId}`,
+        payload: {
+          ...payload,
+          taskId: task.taskId,
+        },
+      }),
+    );
+    return;
+  }
+
+  if (parsed.type === "task.event") {
+    const payload = parsePayloadForType("task.event", parsed.payload);
+    persistTaskEvent(database, payload.event);
+    sendToAndroidClients(sessions, parsed);
     return;
   }
 

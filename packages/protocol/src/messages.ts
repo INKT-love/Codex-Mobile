@@ -61,6 +61,7 @@ export const projectCreatedPayloadSchema = z.object({
 export type ProjectCreatedPayload = z.infer<typeof projectCreatedPayloadSchema>;
 
 export const taskCreatePayloadSchema = z.object({
+  taskId: z.string().min(1).optional(),
   title: z.string().min(1),
   prompt: z.string().min(1),
   projectId: z.string().min(1),
@@ -69,6 +70,11 @@ export const taskCreatePayloadSchema = z.object({
   attachmentIds: z.array(z.string().min(1)).default([]),
 });
 export type TaskCreatePayload = z.infer<typeof taskCreatePayloadSchema>;
+
+export const taskCreatedPayloadSchema = z.object({
+  task: taskSchema,
+});
+export type TaskCreatedPayload = z.infer<typeof taskCreatedPayloadSchema>;
 
 export const taskStatusPayloadSchema = z.object({
   task: taskSchema,
@@ -131,6 +137,7 @@ export const messagePayloadSchemas = {
   "project.create": projectCreatePayloadSchema,
   "project.created": projectCreatedPayloadSchema,
   "task.create": taskCreatePayloadSchema,
+  "task.created": taskCreatedPayloadSchema,
   "task.status": taskStatusPayloadSchema,
   "task.event": taskEventPayloadSchema,
   "approval.request": approvalRequestPayloadSchema,

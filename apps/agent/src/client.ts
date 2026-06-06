@@ -6,6 +6,8 @@ import {
   type PairingConfirmedPayload,
   type PermissionLevel,
   type Project,
+  type TaskCreatePayload,
+  type TaskEvent,
 } from "@codex-mobile/protocol";
 import type { AgentConfig } from "./config.js";
 import { createProjectFolder, listProjectFolders, resolveInsideWorkspace } from "./workspace.js";
@@ -79,6 +81,61 @@ function createProjectModel(
     gitStatus: "unknown",
     remoteCreateStatus: "notRequested",
   };
+}
+
+function createTaskEvent(taskId: string, kind: TaskEvent["kind"], message: string, data?: unknown): TaskEvent {
+  return {
+    eventId: `event_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    taskId,
+    kind,
+    message,
+    createdAt: new Date().toISOString(),
+    data,
+  };
+}
+
+function sendTaskEvent(ws: WebSocket, config: AgentConfig & { deviceId: string }, event: TaskEvent): void {
+  ws.send(
+    JSON.stringify(
+      createEnvelope({
+        id: `agent_task_event_${event.eventId}`,
+        type: "task.event",
+        source: `agent:${config.deviceId}`,
+        target: "server",
+        payload: {
+          event,
+        },
+      }),
+    ),
+  );
+}
+
+function runMockTask(
+  ws: WebSocket,
+  config: AgentConfig & { deviceId: string },
+  payload: TaskCreatePayload,
+): void {
+  const taskId = payload.taskId;
+
+  if (!taskId) {
+    throw new Error("task.create payload is missing taskId.");
+  }
+
+  sendTaskEvent(
+    ws,
+    config,
+    createTaskEvent(taskId, "status", "Task started.", {
+      status: "running",
+    }),
+  );
+  sendTaskEvent(ws, config, createTaskEvent(taskId, "output", `Received prompt: ${payload.prompt}`));
+  sendTaskEvent(
+    ws,
+    config,
+    createTaskEvent(taskId, "status", "Task completed by mock executor.", {
+      status: "completed",
+    }),
+  );
 }
 
 export function runAgent(config: Required<Pick<AgentConfig, "deviceId" | "deviceToken">> & AgentConfig): void {
@@ -171,6 +228,10 @@ export function runAgent(config: Required<Pick<AgentConfig, "deviceId" | "device
           }),
         ),
       );
+    }
+
+    if (message.type === "task.create") {
+      runMockTask(ws, config, message.payload as TaskCreatePayload);
     }
 
     if (message.type === "error") {
