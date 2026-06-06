@@ -1,8 +1,10 @@
 import { loadConfig } from "./config.js";
+import { openDatabase } from "./database.js";
 import { createCodexMobileServer } from "./server.js";
 
 const config = loadConfig();
-const server = createCodexMobileServer(config);
+const database = openDatabase(config.databasePath);
+const server = createCodexMobileServer(config, database);
 
 await server.listen();
 
@@ -11,6 +13,7 @@ console.log(`WebSocket endpoint: ${config.publicUrl}`);
 
 const shutdown = async () => {
   await server.close();
+  database.close();
   process.exit(0);
 };
 

@@ -1,7 +1,13 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
-import { createEnvelope, parseProtocolMessage } from "@codex-mobile/protocol";
+import {
+  createEnvelope,
+  parseProtocolMessage,
+  parsePayloadForType,
+} from "@codex-mobile/protocol";
 import type { ServerConfig } from "./config.js";
+import type { DatabaseConnection } from "./database.js";
+import { PairingError, claimPairingCode } from "./pairing.js";
 
 export interface CodexMobileServer {
   listen(): Promise<void>;
@@ -41,7 +47,7 @@ function send(ws: WebSocket, value: unknown): void {
   ws.send(JSON.stringify(value));
 }
 
-function handleWsMessage(ws: WebSocket, raw: Buffer): void {
+function handleWsMessage(database: DatabaseConnection, ws: WebSocket, raw: Buffer): void {
   let parsedInput: unknown;
 
   try {
@@ -79,6 +85,41 @@ function handleWsMessage(ws: WebSocket, raw: Buffer): void {
     return;
   }
 
+  if (parsed.type === "pairing.claim") {
+    try {
+      const result = claimPairingCode(
+        database,
+        parsePayloadForType("pairing.claim", parsed.payload),
+      );
+
+      send(
+        ws,
+        createEnvelope({
+          id: `pairing_confirmed_${parsed.id}`,
+          type: "pairing.confirmed",
+          source: "server",
+          target: parsed.source,
+          payload: result,
+        }),
+      );
+    } catch (error) {
+      send(
+        ws,
+        createEnvelope({
+          id: `server_error_${parsed.id}`,
+          type: "error",
+          source: "server",
+          target: parsed.source,
+          payload: {
+            code: error instanceof PairingError ? error.code : "pairing_failed",
+            message: error instanceof Error ? error.message : "Pairing failed.",
+          },
+        }),
+      );
+    }
+    return;
+  }
+
   send(
     ws,
     createEnvelope({
@@ -94,7 +135,10 @@ function handleWsMessage(ws: WebSocket, raw: Buffer): void {
   );
 }
 
-export function createCodexMobileServer(config: ServerConfig): CodexMobileServer {
+export function createCodexMobileServer(
+  config: ServerConfig,
+  database: DatabaseConnection,
+): CodexMobileServer {
   const httpServer = createServer((request, response) => {
     handleHttpRequest(config, request, response);
   });
@@ -132,7 +176,7 @@ export function createCodexMobileServer(config: ServerConfig): CodexMobileServer
 
     ws.on("message", (raw) => {
       try {
-        handleWsMessage(ws, raw as Buffer);
+        handleWsMessage(database, ws, raw as Buffer);
       } catch (error) {
         send(
           ws,

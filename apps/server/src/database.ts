@@ -13,6 +13,25 @@ export interface PairingCodeRecord {
   claimedByDeviceId: string | null;
 }
 
+export interface DeviceRecord {
+  deviceId: string;
+  deviceName: string;
+  deviceType: "android" | "agent";
+  tokenHash: string;
+  capabilitiesJson: string;
+  createdAt: string;
+  lastSeenAt: string | null;
+}
+
+export interface PairingCodeLookupRecord {
+  pairing_code_id: string;
+  code_hash: string;
+  created_at: string;
+  expires_at: string;
+  claimed_at: string | null;
+  claimed_by_device_id: string | null;
+}
+
 export function openDatabase(databasePath: string): DatabaseConnection {
   mkdirSync(dirname(databasePath), {
     recursive: true,
@@ -109,4 +128,69 @@ export function insertPairingCode(
       `,
     )
     .run(record);
+}
+
+export function findPairingCodeByHash(
+  database: DatabaseConnection,
+  codeHash: string,
+): PairingCodeLookupRecord | undefined {
+  return database
+    .prepare(
+      `
+        SELECT
+          pairing_code_id,
+          code_hash,
+          created_at,
+          expires_at,
+          claimed_at,
+          claimed_by_device_id
+        FROM pairing_codes
+        WHERE code_hash = ?
+      `,
+    )
+    .get(codeHash) as PairingCodeLookupRecord | undefined;
+}
+
+export function insertDevice(database: DatabaseConnection, record: DeviceRecord): void {
+  database
+    .prepare(
+      `
+        INSERT INTO devices (
+          device_id,
+          device_name,
+          device_type,
+          token_hash,
+          capabilities_json,
+          created_at,
+          last_seen_at
+        )
+        VALUES (
+          @deviceId,
+          @deviceName,
+          @deviceType,
+          @tokenHash,
+          @capabilitiesJson,
+          @createdAt,
+          @lastSeenAt
+        )
+      `,
+    )
+    .run(record);
+}
+
+export function markPairingCodeClaimed(
+  database: DatabaseConnection,
+  pairingCodeId: string,
+  claimedAt: string,
+  claimedByDeviceId: string,
+): void {
+  database
+    .prepare(
+      `
+        UPDATE pairing_codes
+        SET claimed_at = ?, claimed_by_device_id = ?
+        WHERE pairing_code_id = ?
+      `,
+    )
+    .run(claimedAt, claimedByDeviceId, pairingCodeId);
 }

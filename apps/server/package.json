@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "pairing:create": "node dist/cli.js pairing:create",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "node --test \"dist/**/*.test.js\""
   },
   "dependencies": {
     "@codex-mobile/protocol": "0.1.0",
