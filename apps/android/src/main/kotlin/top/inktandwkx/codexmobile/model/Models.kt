@@ -5,9 +5,15 @@ enum class DeviceStatus {
     Offline,
 }
 
+enum class DeviceType {
+    Android,
+    Agent,
+}
+
 data class DeviceUiModel(
     val id: String,
     val name: String,
+    val type: DeviceType,
     val status: DeviceStatus,
     val capabilities: List<String>,
 )
@@ -16,6 +22,8 @@ data class ProjectUiModel(
     val id: String,
     val name: String,
     val path: String,
+    val permissionLevel: String = "Edit",
+    val gitStatus: String = "unknown",
 )
 
 enum class TaskStatus {

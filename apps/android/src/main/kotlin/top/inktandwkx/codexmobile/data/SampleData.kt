@@ -1,6 +1,7 @@
 package top.inktandwkx.codexmobile.data
 
 import top.inktandwkx.codexmobile.model.DeviceStatus
+import top.inktandwkx.codexmobile.model.DeviceType
 import top.inktandwkx.codexmobile.model.DeviceUiModel
 import top.inktandwkx.codexmobile.model.ProjectUiModel
 import top.inktandwkx.codexmobile.model.TaskEventUiModel
@@ -12,6 +13,7 @@ object SampleData {
         DeviceUiModel(
             id = "agent_admin",
             name = "Administrator",
+            type = DeviceType.Agent,
             status = DeviceStatus.Online,
             capabilities = listOf("工作区", "Codex", "Git"),
         ),

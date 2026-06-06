@@ -2,18 +2,25 @@ package top.inktandwkx.codexmobile.state
 
 import androidx.lifecycle.ViewModel
 import top.inktandwkx.codexmobile.model.DeviceStatus
+import top.inktandwkx.codexmobile.model.DeviceType
 import top.inktandwkx.codexmobile.model.DeviceUiModel
+import top.inktandwkx.codexmobile.model.ProjectUiModel
 import top.inktandwkx.codexmobile.network.CodexMobileSocket
 import top.inktandwkx.codexmobile.network.SocketState
 import top.inktandwkx.codexmobile.protocol.DeviceDto
+import top.inktandwkx.codexmobile.protocol.ProjectDto
 import top.inktandwkx.codexmobile.protocol.buildAuthLoginMessage
 import top.inktandwkx.codexmobile.protocol.buildDeviceListMessage
 import top.inktandwkx.codexmobile.protocol.buildPairingClaimMessage
+import top.inktandwkx.codexmobile.protocol.buildProjectCreateMessage
+import top.inktandwkx.codexmobile.protocol.buildProjectListMessage
 import top.inktandwkx.codexmobile.protocol.parseAuthOk
 import top.inktandwkx.codexmobile.protocol.parseDeviceList
 import top.inktandwkx.codexmobile.protocol.parseEnvelope
 import top.inktandwkx.codexmobile.protocol.parseError
 import top.inktandwkx.codexmobile.protocol.parsePairingConfirmed
+import top.inktandwkx.codexmobile.protocol.parseProjectCreated
+import top.inktandwkx.codexmobile.protocol.parseProjectList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +34,10 @@ data class CodexMobileUiState(
     val connectionState: String = "Disconnected",
     val lastError: String? = null,
     val devices: List<DeviceUiModel> = emptyList(),
+    val selectedAgentDeviceId: String? = null,
+    val projects: List<ProjectUiModel> = emptyList(),
+    val newProjectName: String = "",
+    val projectStatus: String = "未加载",
 )
 
 private enum class PendingAction {
@@ -78,6 +89,82 @@ class CodexMobileViewModel(
         socket.send(buildDeviceListMessage(deviceId))
     }
 
+    fun selectAgentDevice(deviceId: String) {
+        _uiState.update { it.copy(selectedAgentDeviceId = deviceId) }
+        refreshProjects()
+    }
+
+    fun updateNewProjectName(value: String) {
+        val sanitized = value
+            .replace("\\", "")
+            .replace("/", "")
+            .replace(":", "")
+            .replace("*", "")
+            .replace("?", "")
+            .replace("\"", "")
+            .replace("<", "")
+            .replace(">", "")
+            .replace("|", "")
+            .take(80)
+        _uiState.update { it.copy(newProjectName = sanitized) }
+    }
+
+    fun refreshProjects() {
+        val state = _uiState.value
+        val deviceId = state.localDeviceId
+        val agentDeviceId = state.selectedAgentDeviceId ?: state.firstOnlineAgentDeviceId()
+
+        if (deviceId == null) {
+            _uiState.update { it.copy(lastError = "请先在设备页完成手机配对和连接。") }
+            return
+        }
+
+        if (agentDeviceId == null) {
+            _uiState.update { it.copy(projectStatus = "没有在线电脑端 Agent。") }
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                selectedAgentDeviceId = agentDeviceId,
+                projectStatus = "正在加载项目...",
+                lastError = null,
+            )
+        }
+        socket.send(buildProjectListMessage(deviceId, agentDeviceId))
+    }
+
+    fun createProject() {
+        val state = _uiState.value
+        val deviceId = state.localDeviceId
+        val agentDeviceId = state.selectedAgentDeviceId ?: state.firstOnlineAgentDeviceId()
+        val folderName = state.newProjectName.trim()
+
+        if (deviceId == null) {
+            _uiState.update { it.copy(lastError = "请先在设备页完成手机配对和连接。") }
+            return
+        }
+
+        if (agentDeviceId == null) {
+            _uiState.update { it.copy(projectStatus = "没有在线电脑端 Agent。") }
+            return
+        }
+
+        if (folderName.isBlank()) {
+            _uiState.update { it.copy(lastError = "请输入项目文件夹名称。") }
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                selectedAgentDeviceId = agentDeviceId,
+                projectStatus = "正在创建项目...",
+                lastError = null,
+            )
+        }
+        socket.send(buildProjectCreateMessage(deviceId, agentDeviceId, folderName))
+    }
+
     fun disconnect() {
         pendingAction = PendingAction.None
         socket.close()
@@ -116,6 +203,8 @@ class CodexMobileViewModel(
             "pairing.confirmed" -> handlePairingConfirmed(text)
             "auth.ok" -> handleAuthOk(text)
             "device.list" -> handleDeviceList(text)
+            "project.list" -> handleProjectList(text)
+            "project.created" -> handleProjectCreated(text)
             "error" -> handleError(text)
         }
     }
@@ -174,8 +263,36 @@ class CodexMobileViewModel(
     private fun handleDeviceList(text: String) {
         val payload = parseDeviceList(parseEnvelope(text))
         _uiState.update {
+            val devices = payload.devices.map(DeviceDto::toUiModel)
             it.copy(
-                devices = payload.devices.map(DeviceDto::toUiModel),
+                devices = devices,
+                selectedAgentDeviceId = it.selectedAgentDeviceId ?: devices.firstOnlineAgentDeviceId(),
+                lastError = null,
+            )
+        }
+    }
+
+    private fun handleProjectList(text: String) {
+        val payload = parseProjectList(parseEnvelope(text))
+        _uiState.update {
+            it.copy(
+                selectedAgentDeviceId = payload.agentDeviceId,
+                projects = payload.projects.map(ProjectDto::toUiModel),
+                projectStatus = if (payload.projects.isEmpty()) "暂无项目，可在下方创建。" else "已加载 ${payload.projects.size} 个项目。",
+                lastError = null,
+            )
+        }
+    }
+
+    private fun handleProjectCreated(text: String) {
+        val payload = parseProjectCreated(parseEnvelope(text))
+        val project = payload.project.toUiModel()
+        _uiState.update {
+            val projects = listOf(project) + it.projects.filterNot { existing -> existing.id == project.id }
+            it.copy(
+                projects = projects.sortedBy { value -> value.name.lowercase() },
+                newProjectName = "",
+                projectStatus = "项目已创建：${project.name}",
                 lastError = null,
             )
         }
@@ -196,7 +313,28 @@ private fun DeviceDto.toUiModel(): DeviceUiModel {
     return DeviceUiModel(
         id = deviceId,
         name = deviceName,
+        type = if (deviceType == "agent") DeviceType.Agent else DeviceType.Android,
         status = if (online) DeviceStatus.Online else DeviceStatus.Offline,
         capabilities = capabilities,
     )
+}
+
+private fun ProjectDto.toUiModel(): ProjectUiModel {
+    return ProjectUiModel(
+        id = projectId,
+        name = displayName,
+        path = absolutePath,
+        permissionLevel = permissionLevel,
+        gitStatus = gitStatus,
+    )
+}
+
+private fun CodexMobileUiState.firstOnlineAgentDeviceId(): String? {
+    return devices.firstOnlineAgentDeviceId()
+}
+
+private fun List<DeviceUiModel>.firstOnlineAgentDeviceId(): String? {
+    return firstOrNull { device ->
+        device.type == DeviceType.Agent && device.status == DeviceStatus.Online
+    }?.id
 }

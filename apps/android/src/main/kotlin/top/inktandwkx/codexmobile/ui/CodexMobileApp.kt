@@ -99,7 +99,18 @@ fun CodexMobileApp() {
                 )
             }
             composable("projects") {
-                ProjectsScreen()
+                ProjectsScreen(
+                    projects = uiState.projects,
+                    devices = uiState.devices,
+                    selectedAgentDeviceId = uiState.selectedAgentDeviceId,
+                    newProjectName = uiState.newProjectName,
+                    projectStatus = uiState.projectStatus,
+                    lastError = uiState.lastError,
+                    onSelectAgent = viewModel::selectAgentDevice,
+                    onNewProjectNameChange = viewModel::updateNewProjectName,
+                    onRefreshProjects = viewModel::refreshProjects,
+                    onCreateProject = viewModel::createProject,
+                )
             }
             composable("settings") {
                 SettingsScreen(

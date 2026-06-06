@@ -55,6 +55,29 @@ data class DeviceListPayload(
 )
 
 @Serializable
+data class ProjectDto(
+    val projectId: String,
+    val displayName: String,
+    val absolutePath: String,
+    val permissionLevel: String,
+    val gitStatus: String,
+    val repoProvider: String? = null,
+    val remoteCreateStatus: String? = null,
+    val githubRepoId: String? = null,
+)
+
+@Serializable
+data class ProjectListPayload(
+    val agentDeviceId: String,
+    val projects: List<ProjectDto> = emptyList(),
+)
+
+@Serializable
+data class ProjectCreatedPayload(
+    val project: ProjectDto,
+)
+
+@Serializable
 data class ErrorPayload(
     val code: String,
     val message: String,
@@ -74,6 +97,14 @@ fun parseAuthOk(envelope: ProtocolEnvelope): AuthOkPayload {
 
 fun parseDeviceList(envelope: ProtocolEnvelope): DeviceListPayload {
     return json.decodeFromJsonElement(DeviceListPayload.serializer(), envelope.payload)
+}
+
+fun parseProjectList(envelope: ProtocolEnvelope): ProjectListPayload {
+    return json.decodeFromJsonElement(ProjectListPayload.serializer(), envelope.payload)
+}
+
+fun parseProjectCreated(envelope: ProtocolEnvelope): ProjectCreatedPayload {
+    return json.decodeFromJsonElement(ProjectCreatedPayload.serializer(), envelope.payload)
 }
 
 fun parseError(envelope: ProtocolEnvelope): ErrorPayload {
@@ -108,6 +139,33 @@ fun buildDeviceListMessage(deviceId: String): String {
         type = "device.list",
         source = "android:$deviceId",
         payload = buildJsonObject {},
+    )
+}
+
+fun buildProjectListMessage(deviceId: String, agentDeviceId: String): String {
+    return buildMessage(
+        type = "project.list",
+        source = "android:$deviceId",
+        payload = buildJsonObject {
+            put("agentDeviceId", agentDeviceId)
+        },
+    )
+}
+
+fun buildProjectCreateMessage(
+    deviceId: String,
+    agentDeviceId: String,
+    folderName: String,
+    permissionLevel: String = "Edit",
+): String {
+    return buildMessage(
+        type = "project.create",
+        source = "android:$deviceId",
+        payload = buildJsonObject {
+            put("agentDeviceId", agentDeviceId)
+            put("folderName", folderName)
+            put("permissionLevel", permissionLevel)
+        },
     )
 }
 
