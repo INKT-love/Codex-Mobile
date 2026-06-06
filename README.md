@@ -111,3 +111,11 @@ This machine currently does not expose `java`, `gradle`, `ANDROID_HOME`, or `AND
 ```powershell
 gradle :apps:android:assembleDebug
 ```
+
+Current Android source includes:
+
+- Server URL setting.
+- Pairing code claim flow.
+- In-memory device token state.
+- Authenticated reconnect.
+- Device list request and rendering.

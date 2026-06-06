@@ -14,12 +14,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import top.inktandwkx.codexmobile.state.CodexMobileViewModel
 import top.inktandwkx.codexmobile.ui.screens.DevicesScreen
 import top.inktandwkx.codexmobile.ui.screens.ProjectsScreen
 import top.inktandwkx.codexmobile.ui.screens.SettingsScreen
@@ -42,6 +45,8 @@ private val topLevelRoutes = listOf(
 @Composable
 fun CodexMobileApp() {
     val navController = rememberNavController()
+    val viewModel = viewModel<CodexMobileViewModel>()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
@@ -82,13 +87,28 @@ fun CodexMobileApp() {
                 TaskDetailScreen()
             }
             composable("devices") {
-                DevicesScreen()
+                DevicesScreen(
+                    devices = uiState.devices,
+                    connectionState = uiState.connectionState,
+                    pairingCode = uiState.pairingCode,
+                    lastError = uiState.lastError,
+                    onPairingCodeChange = viewModel::updatePairingCode,
+                    onPair = viewModel::pairDevice,
+                    onConnect = viewModel::connectAuthenticated,
+                    onRefresh = viewModel::refreshDevices,
+                )
             }
             composable("projects") {
                 ProjectsScreen()
             }
             composable("settings") {
-                SettingsScreen()
+                SettingsScreen(
+                    serverUrl = uiState.serverUrl,
+                    connectionState = uiState.connectionState,
+                    lastError = uiState.lastError,
+                    onServerUrlChange = viewModel::updateServerUrl,
+                    onDisconnect = viewModel::disconnect,
+                )
             }
         }
     }
