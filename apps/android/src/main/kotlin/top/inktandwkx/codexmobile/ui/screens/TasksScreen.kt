@@ -15,7 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddComment
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
@@ -23,20 +23,29 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import top.inktandwkx.codexmobile.data.SampleData
 import top.inktandwkx.codexmobile.model.TaskStatus
 import top.inktandwkx.codexmobile.model.TaskUiModel
 
 @Composable
-fun TasksScreen(onOpenTask: () -> Unit) {
+fun TasksScreen(
+    tasks: List<TaskUiModel>,
+    onOpenTask: (String?) -> Unit,
+) {
+    var selectedFilter by remember { mutableStateOf(TaskFilter.All) }
+    val visibleTasks = tasks.filter { selectedFilter.matches(it.status) }
+
     Scaffold(
         floatingActionButton = {
-            LargeFloatingActionButton(onClick = onOpenTask) {
+            LargeFloatingActionButton(onClick = { onOpenTask(null) }) {
                 Icon(Icons.Outlined.AddComment, contentDescription = "新建任务")
             }
         },
@@ -56,16 +65,27 @@ fun TasksScreen(onOpenTask: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("全部", "运行中", "待确认", "已完成").forEach { label ->
-                    AssistChip(onClick = {}, label = { Text(label) })
+                TaskFilter.entries.forEach { filter ->
+                    FilterChip(
+                        selected = selectedFilter == filter,
+                        onClick = { selectedFilter = filter },
+                        label = { Text(filter.label) },
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(SampleData.tasks) { task ->
-                    TaskRow(task = task, onClick = onOpenTask)
+            if (visibleTasks.isEmpty()) {
+                Text(
+                    text = "暂无任务。点击右下角按钮创建一个 Codex 任务。",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(visibleTasks) { task ->
+                        TaskRow(task = task, onClick = { onOpenTask(task.id) })
+                    }
                 }
             }
         }
@@ -130,8 +150,28 @@ private fun TaskRow(task: TaskUiModel, onClick: () -> Unit) {
 
 private val TaskStatus.label: String
     get() = when (this) {
+        TaskStatus.Queued -> "排队中"
         TaskStatus.Running -> "运行中"
         TaskStatus.WaitingApproval -> "待确认"
         TaskStatus.Completed -> "已完成"
         TaskStatus.Failed -> "失败"
+        TaskStatus.Cancelled -> "已取消"
     }
+
+private enum class TaskFilter(val label: String) {
+    All("全部"),
+    Running("运行中"),
+    WaitingApproval("待确认"),
+    Completed("已完成"),
+    Failed("失败");
+
+    fun matches(status: TaskStatus): Boolean {
+        return when (this) {
+            All -> true
+            Running -> status == TaskStatus.Queued || status == TaskStatus.Running
+            WaitingApproval -> status == TaskStatus.WaitingApproval
+            Completed -> status == TaskStatus.Completed
+            Failed -> status == TaskStatus.Failed || status == TaskStatus.Cancelled
+        }
+    }
+}

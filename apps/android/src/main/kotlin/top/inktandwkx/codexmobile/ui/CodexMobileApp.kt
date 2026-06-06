@@ -80,11 +80,28 @@ fun CodexMobileApp() {
         ) {
             composable("tasks") {
                 TasksScreen(
-                    onOpenTask = { navController.navigate("taskDetail") },
+                    tasks = uiState.tasks,
+                    onOpenTask = { taskId ->
+                        viewModel.selectTask(taskId)
+                        navController.navigate("taskDetail")
+                    },
                 )
             }
             composable("taskDetail") {
-                TaskDetailScreen()
+                TaskDetailScreen(
+                    selectedTask = uiState.tasks.firstOrNull { it.id == uiState.selectedTaskId },
+                    events = uiState.taskEvents[uiState.selectedTaskId].orEmpty(),
+                    projects = uiState.projects,
+                    selectedProjectId = uiState.selectedProjectId,
+                    prompt = uiState.taskPrompt,
+                    permissionLevel = uiState.taskPermissionLevel,
+                    taskStatus = uiState.taskStatus,
+                    lastError = uiState.lastError,
+                    onProjectSelect = viewModel::selectProject,
+                    onPromptChange = viewModel::updateTaskPrompt,
+                    onPermissionChange = viewModel::updateTaskPermissionLevel,
+                    onSend = viewModel::createTask,
+                )
             }
             composable("devices") {
                 DevicesScreen(

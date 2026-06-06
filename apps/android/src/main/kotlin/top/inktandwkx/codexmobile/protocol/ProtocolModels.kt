@@ -78,6 +78,39 @@ data class ProjectCreatedPayload(
 )
 
 @Serializable
+data class TaskDto(
+    val taskId: String,
+    val title: String,
+    val prompt: String,
+    val projectId: String,
+    val agentDeviceId: String,
+    val status: String,
+    val permissionLevel: String,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@Serializable
+data class TaskCreatedPayload(
+    val task: TaskDto,
+)
+
+@Serializable
+data class TaskEventDto(
+    val eventId: String,
+    val taskId: String,
+    val kind: String,
+    val message: String,
+    val createdAt: String,
+    val data: JsonElement? = null,
+)
+
+@Serializable
+data class TaskEventPayload(
+    val event: TaskEventDto,
+)
+
+@Serializable
 data class ErrorPayload(
     val code: String,
     val message: String,
@@ -105,6 +138,14 @@ fun parseProjectList(envelope: ProtocolEnvelope): ProjectListPayload {
 
 fun parseProjectCreated(envelope: ProtocolEnvelope): ProjectCreatedPayload {
     return json.decodeFromJsonElement(ProjectCreatedPayload.serializer(), envelope.payload)
+}
+
+fun parseTaskCreated(envelope: ProtocolEnvelope): TaskCreatedPayload {
+    return json.decodeFromJsonElement(TaskCreatedPayload.serializer(), envelope.payload)
+}
+
+fun parseTaskEvent(envelope: ProtocolEnvelope): TaskEventPayload {
+    return json.decodeFromJsonElement(TaskEventPayload.serializer(), envelope.payload)
 }
 
 fun parseError(envelope: ProtocolEnvelope): ErrorPayload {
@@ -164,6 +205,28 @@ fun buildProjectCreateMessage(
         payload = buildJsonObject {
             put("agentDeviceId", agentDeviceId)
             put("folderName", folderName)
+            put("permissionLevel", permissionLevel)
+        },
+    )
+}
+
+fun buildTaskCreateMessage(
+    deviceId: String,
+    agentDeviceId: String,
+    projectId: String,
+    title: String,
+    prompt: String,
+    permissionLevel: String,
+): String {
+    return buildMessage(
+        type = "task.create",
+        source = "android:$deviceId",
+        target = "agent:$agentDeviceId",
+        payload = buildJsonObject {
+            put("title", title)
+            put("prompt", prompt)
+            put("projectId", projectId)
+            put("agentDeviceId", agentDeviceId)
             put("permissionLevel", permissionLevel)
         },
     )

@@ -27,10 +27,12 @@ data class ProjectUiModel(
 )
 
 enum class TaskStatus {
+    Queued,
     Running,
     WaitingApproval,
     Completed,
     Failed,
+    Cancelled,
 }
 
 data class TaskUiModel(

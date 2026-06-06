@@ -18,6 +18,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Send
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,18 +30,46 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import top.inktandwkx.codexmobile.data.SampleData
+import top.inktandwkx.codexmobile.model.ProjectUiModel
 import top.inktandwkx.codexmobile.model.TaskEventUiModel
+import top.inktandwkx.codexmobile.model.TaskUiModel
 
 @Composable
-fun TaskDetailScreen() {
-    val prompt = remember { mutableStateOf("") }
+fun TaskDetailScreen(
+    selectedTask: TaskUiModel?,
+    events: List<TaskEventUiModel>,
+    projects: List<ProjectUiModel>,
+    selectedProjectId: String?,
+    prompt: String,
+    permissionLevel: String,
+    taskStatus: String,
+    lastError: String?,
+    onProjectSelect: (String) -> Unit,
+    onPromptChange: (String) -> Unit,
+    onPermissionChange: (String) -> Unit,
+    onSend: () -> Unit,
+) {
+    var projectMenuExpanded by remember { mutableStateOf(false) }
+    val selectedProject = projects.firstOrNull { it.id == selectedProjectId } ?: projects.firstOrNull()
+    val displayEvents = if (events.isEmpty()) {
+        listOf(
+            TaskEventUiModel(
+                id = "empty",
+                title = "准备就绪",
+                body = "选择项目后输入任务，点击发送即可让电脑端 Codex 执行。",
+            ),
+        )
+    } else {
+        events
+    }
 
     Column(
         modifier = Modifier
@@ -45,23 +77,78 @@ fun TaskDetailScreen() {
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
         Text(
-            text = "Codex 移动端",
+            text = selectedTask?.title ?: "新建 Codex 任务",
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Black,
         )
         Text(
-            text = "Administrator · CodexMobile · 只读预览",
+            text = selectedTask?.let { "${it.deviceName} · ${it.projectName} · ${it.status.toChineseStatus()}" }
+                ?: "项目：${selectedProject?.name ?: "未选择"} · 权限：${permissionLevel.toChinesePermission()}",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            text = taskStatus,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        if (lastError != null) {
+            Text(
+                text = lastError,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Surface {
+                AssistChip(
+                    onClick = { projectMenuExpanded = true },
+                    label = { Text("项目：${selectedProject?.name ?: "未选择"}") },
+                )
+                DropdownMenu(
+                    expanded = projectMenuExpanded,
+                    onDismissRequest = { projectMenuExpanded = false },
+                ) {
+                    if (projects.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("请先到项目页刷新项目") },
+                            onClick = { projectMenuExpanded = false },
+                        )
+                    } else {
+                        projects.forEach { project ->
+                            DropdownMenuItem(
+                                text = { Text(project.name) },
+                                onClick = {
+                                    onProjectSelect(project.id)
+                                    projectMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
+            listOf("Review", "Edit", "Ship").forEach { value ->
+                FilterChip(
+                    selected = permissionLevel == value,
+                    onClick = { onPermissionChange(value) },
+                    label = { Text(value.toChinesePermission()) },
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(SampleData.events) { event ->
+            items(displayEvents) { event ->
                 EventBubble(event)
             }
         }
@@ -76,8 +163,8 @@ fun TaskDetailScreen() {
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
                 TextField(
-                    value = prompt.value,
-                    onValueChange = { prompt.value = it },
+                    value = prompt,
+                    onValueChange = onPromptChange,
                     placeholder = { Text("给 Codex 发送消息...") },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -102,7 +189,7 @@ fun TaskDetailScreen() {
                         IconButton(onClick = {}) {
                             Icon(Icons.Outlined.Mic, contentDescription = "语音")
                         }
-                        IconButton(onClick = {}) {
+                        IconButton(onClick = onSend) {
                             Icon(Icons.Outlined.Send, contentDescription = "发送")
                         }
                     }
@@ -110,6 +197,22 @@ fun TaskDetailScreen() {
             }
         }
     }
+}
+
+private fun String.toChinesePermission(): String = when (this) {
+    "Review" -> "只读"
+    "Edit" -> "编辑"
+    "Ship" -> "自动提交"
+    else -> this
+}
+
+private fun top.inktandwkx.codexmobile.model.TaskStatus.toChineseStatus(): String = when (this) {
+    top.inktandwkx.codexmobile.model.TaskStatus.Queued -> "排队中"
+    top.inktandwkx.codexmobile.model.TaskStatus.Running -> "运行中"
+    top.inktandwkx.codexmobile.model.TaskStatus.WaitingApproval -> "待确认"
+    top.inktandwkx.codexmobile.model.TaskStatus.Completed -> "已完成"
+    top.inktandwkx.codexmobile.model.TaskStatus.Failed -> "失败"
+    top.inktandwkx.codexmobile.model.TaskStatus.Cancelled -> "已取消"
 }
 
 @Composable
