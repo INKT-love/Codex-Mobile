@@ -10,6 +10,10 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@codex-mobile/protocol": "0.1.0"
+    "@codex-mobile/protocol": "0.1.0",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
   }
 }

@@ -1,17 +1,23 @@
-import { createEnvelope } from "@codex-mobile/protocol";
+import { loadConfig } from "./config.js";
+import { createCodexMobileServer } from "./server.js";
 
-const host = process.env.CODEX_MOBILE_HOST ?? "127.0.0.1";
-const port = Number(process.env.CODEX_MOBILE_PORT ?? "9001");
+const config = loadConfig();
+const server = createCodexMobileServer(config);
 
-const bootMessage = createEnvelope({
-  id: "server_boot",
-  type: "server.boot",
-  source: "server",
-  target: "server",
-  payload: {
-    host,
-    port,
-  },
+await server.listen();
+
+console.log(`Codex Mobile server listening on http://${config.host}:${config.port}`);
+console.log(`WebSocket endpoint: ${config.publicUrl}`);
+
+const shutdown = async () => {
+  await server.close();
+  process.exit(0);
+};
+
+process.on("SIGINT", () => {
+  void shutdown();
 });
 
-console.log(JSON.stringify(bootMessage, null, 2));
+process.on("SIGTERM", () => {
+  void shutdown();
+});

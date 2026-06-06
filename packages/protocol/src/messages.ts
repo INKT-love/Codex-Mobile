@@ -94,6 +94,11 @@ export const errorPayloadSchema = z.object({
 });
 export type ErrorPayload = z.infer<typeof errorPayloadSchema>;
 
+export const serverWelcomePayloadSchema = z.object({
+  service: z.string().min(1),
+});
+export type ServerWelcomePayload = z.infer<typeof serverWelcomePayloadSchema>;
+
 export const messagePayloadSchemas = {
   "pairing.create": pairingCreatePayloadSchema,
   "pairing.claim": pairingClaimPayloadSchema,
@@ -108,6 +113,7 @@ export const messagePayloadSchemas = {
   "approval.request": approvalRequestPayloadSchema,
   "approval.respond": approvalRespondPayloadSchema,
   "notification.intent": notificationIntentPayloadSchema,
+  "server.welcome": serverWelcomePayloadSchema,
   error: errorPayloadSchema,
   ping: z.object({}),
   pong: z.object({}),
