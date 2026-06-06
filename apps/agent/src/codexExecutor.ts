@@ -2,6 +2,7 @@ import { createInterface } from "node:readline";
 import type { PermissionLevel, TaskCreatePayload, TaskEvent } from "@codex-mobile/protocol";
 import { discoverCodexExecutable } from "./codexDiscovery.js";
 import type { AgentConfig } from "./config.js";
+import { runShipGitWorkflow } from "./gitWorkflow.js";
 import { spawnCommand } from "./processCommand.js";
 import { projectIdToPath, resolveInsideWorkspace } from "./workspace.js";
 
@@ -40,6 +41,23 @@ function summarizeCodexJsonLine(line: string): string {
     return type;
   } catch {
     return line;
+  }
+}
+
+interface CodexJsonEvent {
+  type?: string;
+  text?: string;
+  message?: string;
+  error?: {
+    message?: string;
+  };
+}
+
+function parseCodexJsonLine(line: string): CodexJsonEvent | null {
+  try {
+    return JSON.parse(line) as CodexJsonEvent;
+  } catch {
+    return null;
   }
 }
 
@@ -89,7 +107,10 @@ export async function runCodexTask(
     }),
   );
 
+  let completedSuccessfully = false;
+
   await new Promise<void>((resolve) => {
+    let terminalEventSeen = false;
     const child = spawnCommand(codex.path as string, args, {
       cwd,
       windowsHide: true,
@@ -102,9 +123,52 @@ export async function runCodexTask(
       });
 
       stdout.on("line", (line) => {
+        const parsed = parseCodexJsonLine(line);
+
+        if (parsed?.type === "agent_message" && parsed.text) {
+          handlers.onEvent(
+            createTaskEvent(payload.taskId as string, "output", parsed.text, {
+              stream: "stdout",
+              codexType: parsed.type,
+              raw: line,
+            }),
+          );
+          return;
+        }
+
+        if (parsed?.type === "turn.completed") {
+          terminalEventSeen = true;
+          completedSuccessfully = true;
+          handlers.onEvent(
+            createTaskEvent(payload.taskId as string, "status", "Codex task completed.", {
+              status: "completed",
+              raw: line,
+            }),
+          );
+          return;
+        }
+
+        if (parsed?.type === "turn.failed") {
+          terminalEventSeen = true;
+          completedSuccessfully = false;
+          handlers.onEvent(
+            createTaskEvent(
+              payload.taskId as string,
+              "status",
+              parsed.error?.message ?? "Codex task failed.",
+              {
+                status: "failed",
+                raw: line,
+              },
+            ),
+          );
+          return;
+        }
+
         handlers.onEvent(
           createTaskEvent(payload.taskId as string, "output", summarizeCodexJsonLine(line), {
             stream: "stdout",
+            codexType: parsed?.type,
             raw: line,
           }),
         );
@@ -134,19 +198,26 @@ export async function runCodexTask(
     });
 
     child.on("close", (code, signal) => {
-      handlers.onEvent(
-        createTaskEvent(
-          payload.taskId as string,
-          "status",
-          code === 0 ? "Codex task completed." : "Codex task failed.",
-          {
-            status: code === 0 ? "completed" : "failed",
-            code,
-            signal,
-          },
-        ),
-      );
+      if (!terminalEventSeen) {
+        completedSuccessfully = code === 0;
+        handlers.onEvent(
+          createTaskEvent(
+            payload.taskId as string,
+            "status",
+            code === 0 ? "Codex task completed." : "Codex task failed.",
+            {
+              status: code === 0 ? "completed" : "failed",
+              code,
+              signal,
+            },
+          ),
+        );
+      }
       resolve();
     });
   });
+
+  if (completedSuccessfully && payload.permissionLevel === "Ship") {
+    await runShipGitWorkflow(cwd, payload.taskId, payload.title, handlers);
+  }
 }

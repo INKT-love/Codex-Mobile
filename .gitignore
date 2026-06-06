@@ -3,6 +3,7 @@ dist/
 build/
 data/
 tmp-smoke/
+.codex-smoke-project/
 .gradle/
 .idea/
 *.iml
